@@ -1,3 +1,7 @@
 {
-  "rewrites": [{ "source": "/", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/api/callback", "destination": "/api/callback.js" },
+    { "source": "/api/now-playing", "destination": "/api/now-playing.js" }
+  ]
 }
