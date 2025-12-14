@@ -1,46 +1,221 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Now Playing</title>
+    <title>My Spotify Now Playing</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { background: #000; color: white; text-align: center; font-family: Arial; padding: 50px; }
-        #player { background: #1DB954; padding: 30px; border-radius: 20px; max-width: 400px; margin: auto; }
-        img { width: 200px; border-radius: 10px; }
-        h2 { margin: 20px 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #121212;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .card {
+            background: #1e1e1e;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            text-align: center;
+        }
+        
+        .album-art {
+            width: 250px;
+            height: 250px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            object-fit: cover;
+        }
+        
+        .track-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1DB954;
+        }
+        
+        .artist-name {
+            font-size: 18px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        
+        .album-name {
+            font-size: 16px;
+            opacity: 0.7;
+            margin-bottom: 25px;
+        }
+        
+        .spotify-button {
+            display: inline-block;
+            background: #1DB954;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        
+        .spotify-button:hover {
+            background: #1ed760;
+        }
+        
+        .not-playing {
+            padding: 40px 0;
+            color: #888;
+            font-size: 18px;
+        }
+        
+        .error {
+            background: rgba(255, 50, 50, 0.1);
+            color: #ff6b6b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .loading {
+            padding: 40px 0;
+            color: #888;
+        }
     </style>
 </head>
 <body>
-    <div id="player">
-        <h1>🎵 Now Playing</h1>
-        <img id="album" src="">
-        <h2 id="song">Loading...</h2>
-        <p id="artist"></p>
-        <p id="status"></p>
+    <div class="container">
+        <div class="card">
+            <h1>🎵 Now Playing on Spotify</h1>
+            
+            <!-- Loading state -->
+            <div id="loading" class="loading">
+                <p>Connecting to Spotify...</p>
+            </div>
+            
+            <!-- Main content (hidden until data loads) -->
+            <div id="content" style="display: none;">
+                <!-- Album art image - THIS WAS MISSING -->
+                <img id="albumArt" class="album-art" src="" alt="Album Art">
+                
+                <!-- Track info -->
+                <div id="trackInfo">
+                    <div id="trackName" class="track-name"></div>
+                    <div id="artistName" class="artist-name"></div>
+                    <div id="albumName" class="album-name"></div>
+                </div>
+                
+                <!-- Spotify button -->
+                <a id="spotifyLink" class="spotify-button" href="#" target="_blank">
+                    Open in Spotify
+                </a>
+                
+                <!-- Not playing state -->
+                <div id="notPlaying" class="not-playing" style="display: none;">
+                    <p>Nothing is currently playing</p>
+                    <p style="font-size: 14px; margin-top: 10px;">Play something on Spotify to see it here!</p>
+                </div>
+            </div>
+            
+            <!-- Error state -->
+            <div id="error" class="error" style="display: none;"></div>
+            
+            <div style="margin-top: 30px; font-size: 12px; color: #666;">
+                Updates every 10 seconds
+            </div>
+        </div>
     </div>
-    
+
     <script>
-        async function update() {
+        // Your API endpoint
+        const API_URL = 'https://spotifylink-lime.vercel.app/api/now-playing';
+        
+        async function updateNowPlaying() {
             try {
-                const response = await fetch('/api/now-playing');
+                const response = await fetch(API_URL);
                 const data = await response.json();
                 
-                if (data.is_playing) {
-                    document.getElementById('album').src = data.image;
-                    document.getElementById('song').textContent = data.name;
-                    document.getElementById('artist').textContent = data.artists;
-                    document.getElementById('status').textContent = 'Now Playing';
-                } else {
-                    document.getElementById('song').textContent = 'Not Playing';
-                    document.getElementById('artist').textContent = 'Play something on Spotify!';
-                    document.getElementById('status').textContent = '';
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                
+                // Handle errors from API
+                if (data.error) {
+                    if (data.error === 'setup_required') {
+                        showError('Setup required: <a href="/api/auth">Authorize Spotify</a>');
+                    } else if (data.error === 'token_expired') {
+                        showError('Token expired: <a href="/api/auth">Re-authorize Spotify</a>');
+                    } else {
+                        showError('Error: ' + (data.message || data.error));
+                    }
+                    return;
                 }
+                
+                // Check if playing
+                if (data.is_playing) {
+                    // Show track info
+                    document.getElementById('notPlaying').style.display = 'none';
+                    document.getElementById('albumArt').style.display = 'block';
+                    document.getElementById('spotifyLink').style.display = 'inline-block';
+                    
+                    // Update track details
+                    document.getElementById('albumArt').src = data.album_art_url;
+                    document.getElementById('trackName').textContent = data.name;
+                    document.getElementById('artistName').textContent = data.artists;
+                    document.getElementById('albumName').textContent = data.album;
+                    document.getElementById('spotifyLink').href = data.external_url;
+                } else {
+                    // Show "not playing" state
+                    document.getElementById('notPlaying').style.display = 'block';
+                    document.getElementById('albumArt').style.display = 'none';
+                    document.getElementById('spotifyLink').style.display = 'none';
+                    document.getElementById('trackName').textContent = '';
+                    document.getElementById('artistName').textContent = '';
+                    document.getElementById('albumName').textContent = '';
+                }
+                
             } catch (error) {
-                document.getElementById('song').textContent = 'Error loading';
+                console.error('Error:', error);
+                showError('Failed to connect to Spotify API');
             }
         }
         
-        update();
-        setInterval(update, 10000);
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').innerHTML = message;
+        }
+        
+        // Initial load
+        updateNowPlaying();
+        
+        // Update every 10 seconds
+        setInterval(updateNowPlaying, 10000);
+        
+        // Update when page becomes visible
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                updateNowPlaying();
+            }
+        });
     </script>
 </body>
 </html>
