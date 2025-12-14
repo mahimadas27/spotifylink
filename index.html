@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Now Playing</title>
+    <style>
+        body { background: #000; color: white; text-align: center; font-family: Arial; padding: 50px; }
+        #player { background: #1DB954; padding: 30px; border-radius: 20px; max-width: 400px; margin: auto; }
+        img { width: 200px; border-radius: 10px; }
+        h2 { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div id="player">
+        <h1>🎵 Now Playing</h1>
+        <img id="album" src="">
+        <h2 id="song">Loading...</h2>
+        <p id="artist"></p>
+        <p id="status"></p>
+    </div>
+    
+    <script>
+        async function update() {
+            try {
+                const response = await fetch('/api/now-playing');
+                const data = await response.json();
+                
+                if (data.is_playing) {
+                    document.getElementById('album').src = data.image;
+                    document.getElementById('song').textContent = data.name;
+                    document.getElementById('artist').textContent = data.artists;
+                    document.getElementById('status').textContent = 'Now Playing';
+                } else {
+                    document.getElementById('song').textContent = 'Not Playing';
+                    document.getElementById('artist').textContent = 'Play something on Spotify!';
+                    document.getElementById('status').textContent = '';
+                }
+            } catch (error) {
+                document.getElementById('song').textContent = 'Error loading';
+            }
+        }
+        
+        update();
+        setInterval(update, 10000);
+    </script>
+</body>
+</html>
