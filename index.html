@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>My Spotify Now Playing</title>
+    <title>Now Playing on Spotify</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         * {
@@ -11,8 +11,8 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #121212;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #000;
             color: white;
             min-height: 100vh;
             display: flex;
@@ -21,123 +21,300 @@
             padding: 20px;
         }
         
-        .container {
-            max-width: 500px;
+        .spotify-player {
+            background: #181818;
+            border-radius: 12px;
+            padding: 20px;
             width: 100%;
+            max-width: 800px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid #282828;
         }
         
-        .card {
-            background: #1e1e1e;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            text-align: center;
+        /* Album Art - Left Side */
+        .album-art-container {
+            flex-shrink: 0;
         }
         
         .album-art {
-            width: 250px;
-            height: 250px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
             object-fit: cover;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+        
+        .album-art:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Track Info - Middle */
+        .track-info {
+            flex: 1;
+            min-width: 0; /* Important for text truncation */
         }
         
         .track-name {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #1DB954;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .artist-name {
-            font-size: 18px;
-            opacity: 0.9;
-            margin-bottom: 8px;
+            font-size: 14px;
+            color: #b3b3b3;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .album-name {
-            font-size: 16px;
-            opacity: 0.7;
-            margin-bottom: 25px;
+            font-size: 12px;
+            color: #777;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Progress Bar - Below Track Info */
+        .progress-container {
+            margin-top: 12px;
+            width: 100%;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #404040;
+            border-radius: 2px;
+            overflow: hidden;
+            cursor: pointer;
+            margin-bottom: 6px;
+        }
+        
+        .progress {
+            height: 100%;
+            background: #1DB954;
+            width: 0%;
+            transition: width 1s linear;
+            border-radius: 2px;
+        }
+        
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #b3b3b3;
+            margin-top: 2px;
+        }
+        
+        /* Spotify Link - Right Side */
+        .spotify-link-container {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
         }
         
         .spotify-button {
-            display: inline-block;
             background: #1DB954;
             color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
             text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-weight: 600;
-            margin-top: 20px;
-            transition: background 0.3s;
+            font-size: 18px;
         }
         
         .spotify-button:hover {
             background: #1ed760;
+            transform: scale(1.05);
         }
         
+        /* Not Playing State */
         .not-playing {
-            padding: 40px 0;
-            color: #888;
+            text-align: center;
+            padding: 40px 20px;
+            color: #b3b3b3;
+            width: 100%;
+        }
+        
+        .not-playing h3 {
             font-size: 18px;
+            margin-bottom: 10px;
+            color: white;
         }
         
-        .error {
-            background: rgba(255, 50, 50, 0.1);
-            color: #ff6b6b;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            border-left: 4px solid #ff6b6b;
+        .not-playing p {
+            font-size: 14px;
         }
         
+        /* Loading State */
         .loading {
-            padding: 40px 0;
-            color: #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 40px 20px;
+            color: #b3b3b3;
+        }
+        
+        .loading-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background: #1DB954;
+            border-radius: 50%;
+            animation: pulse 1.4s ease-in-out infinite;
+        }
+        
+        .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 640px) {
+            .spotify-player {
+                flex-direction: column;
+                text-align: center;
+                padding: 25px 20px;
+            }
+            
+            .album-art {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .track-info {
+                width: 100%;
+            }
+            
+            .spotify-link-container {
+                margin-top: 15px;
+            }
+        }
+        
+        /* Visualizer Animation (Optional) */
+        .visualizer {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 20px;
+            margin-top: 8px;
+        }
+        
+        .bar {
+            width: 3px;
+            background: #1DB954;
+            border-radius: 2px;
+            animation: equalizer 1.5s ease infinite alternate;
+        }
+        
+        .bar:nth-child(2) { animation-delay: 0.1s; height: 60%; }
+        .bar:nth-child(3) { animation-delay: 0.2s; height: 80%; }
+        .bar:nth-child(4) { animation-delay: 0.3s; height: 100%; }
+        .bar:nth-child(5) { animation-delay: 0.4s; height: 70%; }
+        .bar:nth-child(6) { animation-delay: 0.5s; height: 50%; }
+        
+        @keyframes equalizer {
+            0% { height: 20%; }
+            100% { height: 100%; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <h1>🎵 Now Playing on Spotify</h1>
-            
-            <!-- Loading state -->
-            <div id="loading" class="loading">
-                <p>Connecting to Spotify...</p>
+    <div class="spotify-player">
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
-            
-            <!-- Main content (hidden until data loads) -->
-            <div id="content" style="display: none;">
-                <!-- Album art image - THIS WAS MISSING -->
+            <span>Connecting to Spotify...</span>
+        </div>
+        
+        <!-- Playing State (Hidden Initially) -->
+        <div id="playingState" style="display: none; width: 100%;">
+            <!-- Left: Album Art -->
+            <div class="album-art-container">
                 <img id="albumArt" class="album-art" src="" alt="Album Art">
+            </div>
+            
+            <!-- Middle: Track Info + Progress Bar -->
+            <div class="track-info">
+                <div id="trackName" class="track-name"></div>
+                <div id="artistName" class="artist-name"></div>
+                <div id="albumName" class="album-name"></div>
                 
-                <!-- Track info -->
-                <div id="trackInfo">
-                    <div id="trackName" class="track-name"></div>
-                    <div id="artistName" class="artist-name"></div>
-                    <div id="albumName" class="album-name"></div>
+                <!-- Visualizer (Only shows when playing) -->
+                <div id="visualizer" class="visualizer" style="display: none;">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
                 </div>
                 
-                <!-- Spotify button -->
-                <a id="spotifyLink" class="spotify-button" href="#" target="_blank">
-                    Open in Spotify
-                </a>
-                
-                <!-- Not playing state -->
-                <div id="notPlaying" class="not-playing" style="display: none;">
-                    <p>Nothing is currently playing</p>
-                    <p style="font-size: 14px; margin-top: 10px;">Play something on Spotify to see it here!</p>
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress" id="progress"></div>
+                    </div>
+                    <div class="time-info">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
                 </div>
             </div>
             
-            <!-- Error state -->
-            <div id="error" class="error" style="display: none;"></div>
-            
-            <div style="margin-top: 30px; font-size: 12px; color: #666;">
-                Updates every 10 seconds
+            <!-- Right: Spotify Button -->
+            <div class="spotify-link-container">
+                <a id="spotifyLink" class="spotify-button" href="#" target="_blank" title="Open in Spotify">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.901-.539-.122-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Not Playing State (Hidden Initially) -->
+        <div id="notPlaying" class="not-playing" style="display: none;">
+            <h3>No music playing</h3>
+            <p>Play something on Spotify to see it here!</p>
+            <div style="margin-top: 15px; font-size: 12px; color: #666;">
+                <div class="visualizer">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -146,6 +323,38 @@
         // Your API endpoint
         const API_URL = 'https://spotifylink-lime.vercel.app/api/now-playing';
         
+        // State for tracking progress
+        let lastUpdateTime = 0;
+        let lastProgress = 0;
+        let progressInterval;
+        
+        // Format milliseconds to MM:SS
+        function formatTime(ms) {
+            if (!ms) return '0:00';
+            const minutes = Math.floor(ms / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Update progress bar in real-time
+        function updateProgressBar(startProgress, startTime, duration) {
+            if (progressInterval) clearInterval(progressInterval);
+            
+            progressInterval = setInterval(() => {
+                const now = Date.now();
+                const elapsed = now - startTime;
+                const currentProgress = startProgress + elapsed;
+                
+                if (currentProgress <= duration) {
+                    const percent = (currentProgress / duration) * 100;
+                    document.getElementById('progress').style.width = `${percent}%`;
+                    document.getElementById('currentTime').textContent = formatTime(currentProgress);
+                } else {
+                    clearInterval(progressInterval);
+                }
+            }, 1000);
+        }
+        
         async function updateNowPlaying() {
             try {
                 const response = await fetch(API_URL);
@@ -153,62 +362,84 @@
                 
                 // Hide loading
                 document.getElementById('loading').style.display = 'none';
-                document.getElementById('content').style.display = 'block';
-                document.getElementById('error').style.display = 'none';
                 
-                // Handle errors from API
+                // Handle errors
                 if (data.error) {
-                    if (data.error === 'setup_required') {
-                        showError('Setup required: <a href="/api/auth">Authorize Spotify</a>');
-                    } else if (data.error === 'token_expired') {
-                        showError('Token expired: <a href="/api/auth">Re-authorize Spotify</a>');
-                    } else {
-                        showError('Error: ' + (data.message || data.error));
-                    }
+                    showNotPlaying();
                     return;
                 }
                 
                 // Check if playing
-                if (data.is_playing) {
-                    // Show track info
+                if (data.is_playing && data.name) {
+                    // Show playing state
+                    document.getElementById('playingState').style.display = 'flex';
                     document.getElementById('notPlaying').style.display = 'none';
-                    document.getElementById('albumArt').style.display = 'block';
-                    document.getElementById('spotifyLink').style.display = 'inline-block';
+                    document.getElementById('visualizer').style.display = 'flex';
                     
-                    // Update track details
-                    document.getElementById('albumArt').src = data.album_art_url;
+                    // Update track info
+                    document.getElementById('albumArt').src = data.album_art_url || 'https://via.placeholder.com/80';
                     document.getElementById('trackName').textContent = data.name;
                     document.getElementById('artistName').textContent = data.artists;
-                    document.getElementById('albumName').textContent = data.album;
+                    document.getElementById('albumName').textContent = data.album || '';
                     document.getElementById('spotifyLink').href = data.external_url;
+                    
+                    // Update progress
+                    document.getElementById('totalTime').textContent = formatTime(data.duration_ms);
+                    
+                    // Start progress bar animation
+                    const startTime = Date.now() - data.progress_ms;
+                    document.getElementById('currentTime').textContent = formatTime(data.progress_ms);
+                    document.getElementById('progress').style.width = `${(data.progress_ms / data.duration_ms) * 100}%`;
+                    
+                    updateProgressBar(data.progress_ms, startTime, data.duration_ms);
+                    
                 } else {
-                    // Show "not playing" state
-                    document.getElementById('notPlaying').style.display = 'block';
-                    document.getElementById('albumArt').style.display = 'none';
-                    document.getElementById('spotifyLink').style.display = 'none';
-                    document.getElementById('trackName').textContent = '';
-                    document.getElementById('artistName').textContent = '';
-                    document.getElementById('albumName').textContent = '';
+                    showNotPlaying();
                 }
                 
             } catch (error) {
                 console.error('Error:', error);
-                showError('Failed to connect to Spotify API');
+                showNotPlaying();
             }
         }
         
-        function showError(message) {
+        function showNotPlaying() {
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('content').style.display = 'none';
-            document.getElementById('error').style.display = 'block';
-            document.getElementById('error').innerHTML = message;
+            document.getElementById('playingState').style.display = 'none';
+            document.getElementById('notPlaying').style.display = 'block';
+            
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+        }
+        
+        // Click on progress bar to seek (simulated)
+        document.getElementById('progressBar').addEventListener('click', function(e) {
+            const rect = this.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            document.getElementById('progress').style.width = `${percent * 100}%`;
+            
+            // Update time display (simulated)
+            const totalTime = document.getElementById('totalTime').textContent;
+            const totalMs = parseTime(totalTime);
+            const newTime = totalMs * percent;
+            document.getElementById('currentTime').textContent = formatTime(newTime);
+        });
+        
+        // Helper to parse time string to ms
+        function parseTime(timeStr) {
+            const parts = timeStr.split(':');
+            if (parts.length === 2) {
+                return (parseInt(parts[0]) * 60000) + (parseInt(parts[1]) * 1000);
+            }
+            return 0;
         }
         
         // Initial load
         updateNowPlaying();
         
-        // Update every 10 seconds
-        setInterval(updateNowPlaying, 10000);
+        // Update every 5 seconds
+        setInterval(updateNowPlaying, 5000);
         
         // Update when page becomes visible
         document.addEventListener('visibilitychange', function() {
