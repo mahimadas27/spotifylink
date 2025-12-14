@@ -1,22 +1,27 @@
 const axios = require('axios');
 
 module.exports = async (req, res) => {
+  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  
+  if (req.method === 'OPTIONS') return res.status(200).end();
   
   try {
-    // 1. Get credentials from environment
+    // Get credentials
     const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN;
     const clientId = process.env.SPOTIFY_CLIENT_ID;
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
     
+    // Check if we need to authorize first
     if (!refreshToken) {
       return res.json({ 
-        error: 'No refresh token',
-        message: 'You need to authorize first. Visit /api/auth to start.'
+        error: 'setup_required',
+        message: 'Visit /api/auth to authorize Spotify first'
       });
     }
     
-    // 2. Refresh the access token
+    // 1. Refresh access token
     const tokenResponse = await axios.post(
       'https://accounts.spotify.com/api/token',
       new URLSearchParams({
@@ -34,7 +39,7 @@ module.exports = async (req, res) => {
     
     const accessToken = tokenResponse.data.access_token;
     
-    // 3. Get currently playing track
+    // 2. Get currently playing
     const spotifyResponse = await axios.get(
       'https://api.spotify.com/v1/me/player/currently-playing',
       {
@@ -56,19 +61,25 @@ module.exports = async (req, res) => {
       artists: data.item.artists.map(artist => artist.name).join(', '),
       album: data.item.album.name,
       album_art_url: data.item.album.images[0]?.url,
-      external_url: data.item.external_urls.spotify
+      external_url: data.item.external_urls.spotify,
+      progress_ms: data.progress_ms,
+      duration_ms: data.item.duration_ms
     });
     
   } catch (error) {
     console.error('Error:', error.response?.data || error.message);
     
+    // Handle expired refresh token
     if (error.response?.data?.error === 'invalid_grant') {
       return res.json({
-        error: 'Refresh token expired',
-        message: 'You need to re-authorize. The refresh token is no longer valid.'
+        error: 'token_expired',
+        message: 'Refresh token expired. Visit /api/auth to re-authorize.'
       });
     }
     
-    return res.json({ error: error.message });
+    return res.json({ 
+      error: 'api_error',
+      details: error.message 
+    });
   }
 };
