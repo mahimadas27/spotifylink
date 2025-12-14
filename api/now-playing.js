@@ -1,32 +1,25 @@
-// api/now-playing.js (updated version)
 const axios = require('axios');
-const qs = require('querystring');
 
 module.exports = async (req, res) => {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') return res.status(200).end();
   
   try {
-    // Get refresh token from environment
+    // 1. Get credentials from environment
     const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN;
     const clientId = process.env.SPOTIFY_CLIENT_ID;
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
     
-    if (!refreshToken || !clientId || !clientSecret) {
-      return res.status(500).json({ 
-        error: 'Server not configured',
-        message: 'Missing Spotify credentials in environment variables'
+    if (!refreshToken) {
+      return res.json({ 
+        error: 'No refresh token',
+        message: 'You need to authorize first. Visit /api/auth to start.'
       });
     }
     
-    // Always refresh token on each call (simplest approach for serverless)
+    // 2. Refresh the access token
     const tokenResponse = await axios.post(
       'https://accounts.spotify.com/api/token',
-      qs.stringify({
+      new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: refreshToken,
         client_id: clientId,
@@ -41,7 +34,7 @@ module.exports = async (req, res) => {
     
     const accessToken = tokenResponse.data.access_token;
     
-    // Now fetch current track
+    // 3. Get currently playing track
     const spotifyResponse = await axios.get(
       'https://api.spotify.com/v1/me/player/currently-playing',
       {
@@ -52,10 +45,11 @@ module.exports = async (req, res) => {
     );
     
     if (spotifyResponse.status === 204) {
-      return res.json({ is_playing: false, message: 'Nothing playing' });
+      return res.json({ is_playing: false });
     }
     
     const data = spotifyResponse.data;
+    
     return res.json({
       is_playing: true,
       name: data.item.name,
@@ -66,18 +60,15 @@ module.exports = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error:', error.response?.data || error.message);
     
-    if (error.response?.status === 400) {
-      return res.status(401).json({ 
+    if (error.response?.data?.error === 'invalid_grant') {
+      return res.json({
         error: 'Refresh token expired',
-        message: 'You need to re-authorize. Visit the setup page.'
+        message: 'You need to re-authorize. The refresh token is no longer valid.'
       });
     }
     
-    return res.status(500).json({ 
-      error: 'Failed to fetch track',
-      details: error.message 
-    });
+    return res.json({ error: error.message });
   }
 };
